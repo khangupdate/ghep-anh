@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>PhotoEdit - Web App chỉnh ảnh</title>
+  <meta name="description" content="Web app chỉnh ảnh chạy trực tiếp trên trình duyệt: tải ảnh, cắt ảnh, xoay, lật, thêm chữ và xuất JPG/PNG/WebP." />
+
+  <link rel="stylesheet" href="vendor/cropperjs/cropper.min.css">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">▣</span>
+        <span>PhotoEdit</span>
+      </div>
+
+      <div class="topbar-actions">
+        <label class="btn btn-neutral upload-btn" for="fileInput">
+          <span>⇧</span>
+          <span>Tải ảnh</span>
+        </label>
+        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" hidden />
+
+        <button class="btn btn-neutral" id="undoBtn" type="button" title="Hoàn tác">↩ Undo</button>
+        <button class="btn btn-neutral" id="redoBtn" type="button" title="Làm lại">↪ Redo</button>
+        <button class="btn btn-primary desktop-export" id="exportBtnTop" type="button">⇩ Xuất ảnh</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="left-tools" aria-label="Công cụ chỉnh ảnh">
+        <button class="tool-btn active" data-tool="crop" type="button" title="Cắt ảnh">⌗</button>
+        <button class="tool-btn" data-tool="collage" type="button" title="Ghép ảnh">▦</button>
+        <button class="tool-btn" data-tool="rotate" type="button" title="Xoay & lật">⟳</button>
+        <button class="tool-btn" data-tool="text" type="button" title="Thêm chữ">Tt</button>
+      </aside>
+
+      <section class="stage-wrap">
+        <div class="empty-state" id="emptyState">
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">⇧</div>
+            <div class="drop-title">Kéo thả ảnh vào đây</div>
+            <div class="drop-subtitle">Hoặc bấm “Tải ảnh” để chọn từ máy</div>
+          </div>
+        </div>
+
+        <div class="canvas-card" id="canvasCard" hidden>
+          <canvas id="editorCanvas"></canvas>
+        </div>
+      </section>
+
+      <aside class="right-panel">
+        <section class="panel-section" data-panel="crop">
+          <h2>Cắt ảnh</h2>
+          <div class="preset-grid">
+            <button class="chip active" data-ratio="free" type="button">Tự do</button>
+            <button class="chip" data-ratio="1" type="button">1:1</button>
+            <button class="chip" data-ratio="1.333333" type="button">4:3</button>
+            <button class="chip" data-ratio="1.777777" type="button">16:9</button>
+            <button class="chip" data-ratio="0.5625" type="button">9:16</button>
+          </div>
+          <button class="btn btn-panel" id="openCropBtn" type="button">Mở khung cắt</button>
+          <p class="hint">Cắt dựa trên ảnh hiện tại, kể cả phần chữ đã thêm.</p>
+        </section>
+
+        <section class="panel-section is-hidden" data-panel="collage">
+          <h2>Ghép ảnh</h2>
+          <div class="collage-actions">
+            <label class="btn btn-panel" for="collageInput">▦ Chọn 2-5 ảnh</label>
+            <label class="btn btn-panel" for="collageAddInput">＋ Thêm ảnh</label>
+          </div>
+          <input id="collageInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" multiple hidden />
+          <input id="collageAddInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" multiple hidden />
+          <div class="collage-status" id="collageStatus">Chưa chọn ảnh</div>
+          <p class="hint">Ảnh được tự động xếp cạnh nhau hoặc xuống dòng để tỉ lệ ảnh ghép gần 1:1 nhất.</p>
+        </section>
+
+        <section class="panel-section is-hidden" data-panel="rotate">
+          <h2>Xoay & lật</h2>
+          <div class="control-row">
+            <button class="btn btn-panel" id="rotateLeftBtn" type="button">↶ 90°</button>
+            <button class="btn btn-panel" id="rotateRightBtn" type="button">↷ 90°</button>
+          </div>
+          <div class="control-row">
+            <button class="btn btn-panel" id="flipXBtn" type="button">⇄ Lật ngang</button>
+            <button class="btn btn-panel" id="flipYBtn" type="button">⇅ Lật dọc</button>
+          </div>
+
+          <label class="range-label">
+            <span>Xoay tự do</span>
+            <strong id="rotateValue">0°</strong>
+          </label>
+          <input id="rotateRange" class="range" type="range" min="-45" max="45" step="1" value="0" />
+          <button class="btn btn-panel" id="applyRotateBtn" type="button">Áp dụng xoay tự do</button>
+        </section>
+
+        <section class="panel-section is-hidden" data-panel="text">
+          <h2>Thêm chữ</h2>
+          <input class="input" id="textInput" type="text" placeholder="Nhập nội dung..." />
+          <div class="control-row">
+            <label class="mini-field">
+              <span>Cỡ chữ</span>
+              <input id="fontSizeInput" type="number" min="12" max="160" value="42" />
+            </label>
+
+            <label class="mini-field">
+              <span>Màu</span>
+              <input id="textColorInput" type="color" value="#ffffff" />
+            </label>
+          </div>
+
+          <label class="mini-field full">
+            <span>Font</span>
+            <select id="fontFamilyInput">
+              <option value="Arial">Arial</option>
+              <option value="Inter">Inter</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Verdana">Verdana</option>
+            </select>
+          </label>
+
+          <label class="check-row">
+            <input id="shadowToggle" type="checkbox" checked />
+            <span>Đổ bóng chữ</span>
+          </label>
+
+          <div class="control-row">
+            <button class="btn btn-panel" id="addTextBtn" type="button">Thêm chữ</button>
+            <button class="btn btn-panel danger" id="deleteObjectBtn" type="button">Xoá đối tượng</button>
+          </div>
+          <p class="hint">Sau khi thêm, kéo thả để đổi vị trí. Có thể phóng to, xoay, sửa trực tiếp trên canvas.</p>
+        </section>
+
+        <section class="panel-section" data-panel="export">
+          <h2>Xuất ảnh</h2>
+
+          <label class="mini-field full">
+            <span>Định dạng</span>
+            <select id="exportFormat">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </label>
+
+          <label class="range-label">
+            <span>Chất lượng</span>
+            <strong id="qualityValue">92%</strong>
+          </label>
+          <input id="qualityRange" class="range" type="range" min="50" max="100" value="92" />
+
+          <button class="btn btn-primary full-btn" id="exportBtn" type="button">⇩ Tải ảnh về máy</button>
+          <p class="hint">Ảnh được xử lý trực tiếp trên trình duyệt, không gửi lên server.</p>
+        </section>
+      </aside>
+    </main>
+
+    <nav class="mobile-toolbar" aria-label="Thanh công cụ mobile">
+      <button class="mobile-tool active" data-tool="crop" type="button"><span>⌗</span><small>Cắt</small></button>
+      <button class="mobile-tool" data-tool="collage" type="button"><span>▦</span><small>Ghép</small></button>
+      <button class="mobile-tool" data-tool="rotate" type="button"><span>⟳</span><small>Xoay</small></button>
+      <button class="mobile-tool" data-tool="text" type="button"><span>Tt</span><small>Chữ</small></button>
+      <button class="mobile-tool" id="mobileUndoBtn" type="button"><span>↶</span><small>Undo</small></button>
+      <button class="mobile-tool" id="mobileExportBtn" type="button"><span>⇩</span><small>Xuất</small></button>
+    </nav>
+  </div>
+
+  <div class="crop-modal" id="cropModal" hidden>
+    <div class="crop-dialog">
+      <div class="crop-head">
+        <strong>Cắt ảnh</strong>
+        <button class="icon-btn" id="closeCropBtn" type="button">×</button>
+      </div>
+      <div class="crop-body">
+        <img id="cropImage" alt="Ảnh cần cắt" />
+      </div>
+      <div class="crop-foot">
+        <button class="btn btn-neutral" id="cancelCropBtn" type="button">Huỷ</button>
+        <button class="btn btn-primary" id="applyCropBtn" type="button">Áp dụng</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="vendor/fabric/fabric.min.js"></script>
+  <script src="vendor/cropperjs/cropper.min.js"></script>
+
+  <script src="js/crop.js"></script>
+  <script src="js/collage.js"></script>
+  <script src="js/text.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
