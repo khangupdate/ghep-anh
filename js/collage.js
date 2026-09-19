@@ -180,6 +180,13 @@
 
       const fileNames = selectedFiles.map((file) => file.name).join(", ");
       setStatus(`Đã ghép ${images.length} ảnh: ${fileNames}`);
+
+      if (window.PhotoExport && typeof window.PhotoExport.saveDataUrl === "function") {
+        await window.PhotoExport.saveDataUrl(dataUrl, {
+          mimeType: "image/png",
+          automatic: true
+        });
+      }
     } catch (error) {
       app && app.toast(error.message || "Không ghép được ảnh");
       setStatus("Không ghép được ảnh");
